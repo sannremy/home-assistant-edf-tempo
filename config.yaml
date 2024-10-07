@@ -1,0 +1,16 @@
+name: "EDF Tempo"
+description: "Get daily Tempo color"
+version: "1.0.0"
+slug: "edf-tempo"
+init: false
+homeassistant_api: true
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+options:
+  cron: "0 */3 * * *"
+schema:
+  cron: str
