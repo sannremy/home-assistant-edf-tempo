@@ -1,4 +1,3 @@
-const CronJob = require('cron').CronJob;
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 
@@ -129,14 +128,4 @@ const getTempoData = async () => {
   await browser.close();
 };
 
-const tempoJob = new CronJob(
-  `0 ${process.env.EDF_CRON}`,
-  function () { // onTick
-    getTempoData();
-  },
-  null,
-  true, // Start the job right now
-  'Europe/Paris', // Timezone
-  null, // Context
-  true // Run the job
-);
+getTempoData();
