@@ -5,7 +5,11 @@ puppeteer.use(StealthPlugin());
 
 const log = (...args) => {
   return console.log(`[${(new Date()).toISOString()}]`, ...args);
-}
+};
+
+const sleep = (ms) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
 
 const addToState = (name, state, attributes) => {
   return fetch(`http://supervisor/core/api/states/${name}`, {
@@ -36,6 +40,11 @@ const getTempoData = async () => {
 
   // Open new tab
   const page = await browser.newPage();
+
+  page.on("framenavigated", frame => {
+    const url = frame.url(); // the new url
+    log('Frame navigated', url);
+  });
 
   page.setDefaultNavigationTimeout(5 * 60 * 1000); // 5 minutes
 
@@ -72,9 +81,9 @@ const getTempoData = async () => {
   const remainingTempoDaysPromise = getContentFromAPI('https://api-commerce.edf.fr/commerce/activet/v1/saisons/search');
 
   // Tempo page
-  await page.goto('https://particulier.edf.fr/fr/accueil/gestion-contrat/options/tempo.html', {
-    waitUntil: 'networkidle0',
-  });
+  await page.goto('https://particulier.edf.fr/fr/accueil/gestion-contrat/options/tempo.html');
+
+  await sleep(10000);
 
   const tempoJson = await tempoPromise;
 
