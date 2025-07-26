@@ -81,8 +81,12 @@ const getTempoData = async () => {
   const remainingTempoDaysPromise = getContentFromAPI('https://api-commerce.edf.fr/commerce/activet/v1/saisons/search');
 
   // Tempo page
-  await page.goto('https://particulier.edf.fr/fr/accueil/gestion-contrat/options/tempo.html');
+  await page.goto('https://particulier.edf.fr/fr/accueil/gestion-contrat/options/tempo.html#/');
 
+  // Wait for the page to load
+  await page.waitForSelector('#a11y-today');
+
+  // Wait for the API calls to finish
   await sleep(10000);
 
   const tempoJson = await tempoPromise;
@@ -96,6 +100,10 @@ const getTempoData = async () => {
 
   const calendrier = tempoJson.options[0].calendrier;
 
+  let todayFound = false;
+  let tomorrowFound = false;
+  let remainingDaysFound = false;
+
   const calDateToday = calendrier.find((cal) => { return cal.dateApplication === dateTempoToday; });
   if (calDateToday.statut) {
     await addToState(
@@ -106,6 +114,8 @@ const getTempoData = async () => {
         date: tempoJson.dateHeureTraitementActivET,
       }
     );
+
+    todayFound = true;
   }
 
   const calDateTomorrow = calendrier.find((cal) => { return cal.dateApplication === dateTempoTomorrow; });
@@ -118,6 +128,8 @@ const getTempoData = async () => {
         date: tempoJson.dateHeureTraitementActivET,
       }
     );
+
+    tomorrowFound = true;
   }
 
   const remainingTempoDaysJson = await remainingTempoDaysPromise;
@@ -129,12 +141,34 @@ const getTempoData = async () => {
         color.nombreJours - color.nombreJoursTires,
         color
       );
+
+      remainingDaysFound = true;
     }
   });
 
-  // Close browser
-  log('Close browser');
-  await browser.close();
+  // Loop for 30 seconds to ensure all states are set or gracefully exit if not found
+  let attempts = 0;
+  const interval = setInterval(async () => {
+    if (todayFound && tomorrowFound && remainingDaysFound) {
+      // Close browser
+      log('Close browser');
+      await browser.close();
+
+      clearInterval(interval);
+    }
+
+    if (attempts > 30) {
+      log('Timeout reached, stopping the script.');
+
+      // Close browser
+      log('Close browser');
+      await browser.close();
+
+      clearInterval(interval);
+    }
+
+    attempts++;
+  }, 1000);
 };
 
 getTempoData();
