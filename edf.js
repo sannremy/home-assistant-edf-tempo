@@ -54,6 +54,32 @@ const getTempoData = async () => {
     height: 687,
   });
 
+  // Loop for 30 seconds to ensure all states are set or gracefully exit if not found
+  let todayFound = false;
+  let tomorrowFound = false;
+  let remainingDaysFound = false;
+
+  let attempts = 0;
+  const interval = setInterval(async () => {
+    if (todayFound && tomorrowFound && remainingDaysFound) {
+      // Close browser
+      log('Close browser');
+      await browser.close();
+
+      clearInterval(interval);
+    } else if (attempts > 30) {
+      log('Timeout reached, stopping the script.');
+
+      // Close browser
+      log('Close browser');
+      await browser.close();
+
+      clearInterval(interval);
+    }
+
+    attempts++;
+  }, 1000);
+
   const getContentFromAPI = async (url) => {
     return await new Promise(async resolve => {
       log('Set event on response for API call', page.url());
@@ -100,10 +126,6 @@ const getTempoData = async () => {
 
   const calendrier = tempoJson.options[0].calendrier;
 
-  let todayFound = false;
-  let tomorrowFound = false;
-  let remainingDaysFound = false;
-
   const calDateToday = calendrier.find((cal) => { return cal.dateApplication === dateTempoToday; });
   if (calDateToday.statut) {
     await addToState(
@@ -116,6 +138,7 @@ const getTempoData = async () => {
     );
 
     todayFound = true;
+    log('Today is:', calDateToday.statut);
   }
 
   const calDateTomorrow = calendrier.find((cal) => { return cal.dateApplication === dateTempoTomorrow; });
@@ -130,45 +153,24 @@ const getTempoData = async () => {
     );
 
     tomorrowFound = true;
+    log('Tomorrow is:', calDateTomorrow.statut);
   }
 
   const remainingTempoDaysJson = await remainingTempoDaysPromise;
 
   remainingTempoDaysJson.forEach(async (color) => {
     if (color.typeJourEff) {
+      const nbDiff = color.nombreJours - color.nombreJoursTires;
       await addToState(
         `sensor.remaining_${color.typeJourEff.toLowerCase().replace('tempo_', '')}_days`,
-        color.nombreJours - color.nombreJoursTires,
+        nbDiff,
         color
       );
 
       remainingDaysFound = true;
+      log(`Remaining ${color.typeJourEff} days:`, nbDiff);
     }
   });
-
-  // Loop for 30 seconds to ensure all states are set or gracefully exit if not found
-  let attempts = 0;
-  const interval = setInterval(async () => {
-    if (todayFound && tomorrowFound && remainingDaysFound) {
-      // Close browser
-      log('Close browser');
-      await browser.close();
-
-      clearInterval(interval);
-    }
-
-    if (attempts > 30) {
-      log('Timeout reached, stopping the script.');
-
-      // Close browser
-      log('Close browser');
-      await browser.close();
-
-      clearInterval(interval);
-    }
-
-    attempts++;
-  }, 1000);
 };
 
 getTempoData();
