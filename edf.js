@@ -50,8 +50,8 @@ const getTempoData = async () => {
 
   // Set viewport
   await page.setViewport({
-    width: 1168,
-    height: 687,
+    width: 1902,
+    height: 1021,
   });
 
   // Loop for 30 seconds to ensure all states are set or gracefully exit if not found
